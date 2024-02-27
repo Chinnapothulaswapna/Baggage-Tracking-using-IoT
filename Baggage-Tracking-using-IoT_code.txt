@@ -1,0 +1,46 @@
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
+
+SoftwareSerial gpsSerial(10, 11); // RX, TX for GPS module
+TinyGPSPlus gps;
+
+const int ledPin = 13;
+
+void setup() {
+  Serial.begin(9600);
+  gpsSerial.begin(9600);
+  pinMode(ledPin, OUTPUT);
+
+  // Connect to the IoT platform or server (Replace with actual server details)
+  // e.g., ThingSpeak API
+  Serial.println("AT+CIPSTART=\"TCP\",\"api.thingspeak.com\",80");
+  delay(2000);
+}
+
+void loop() {
+  while (gpsSerial.available() > 0) {
+    if (gps.encode(gpsSerial.read())) {
+      sendGPSData(gps.location.lat(), gps.location.lng());
+    }
+  }
+}
+
+void sendGPSData(float latitude, float longitude) {
+  Serial.println("AT+CIPSEND=64");
+  delay(2000);
+
+  Serial.print("GET /update?key=YOUR_THINGSPEAK_API_KEY&field1=");
+  Serial.print(latitude, 6);
+  Serial.print("&field2=");
+  Serial.print(longitude, 6);
+  Serial.println(" HTTP/1.0");
+  delay(2000);
+
+  Serial.println("AT+CIPCLOSE");
+  delay(2000);
+
+  // Flash the LED to indicate data transmission
+  digitalWrite(ledPin, HIGH);
+  delay(500);
+  digitalWrite(ledPin, LOW);
+}
